@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import com.onthegomap.planetiler.FeatureCollector;
 import com.onthegomap.planetiler.TestUtils;
 import com.onthegomap.planetiler.VectorTile;
+import com.onthegomap.planetiler.config.Arguments;
 import com.onthegomap.planetiler.config.PlanetilerConfig;
 import com.onthegomap.planetiler.geo.GeoUtils;
 import com.onthegomap.planetiler.geo.GeometryException;
@@ -36,9 +37,11 @@ public abstract class AbstractLayerTest {
   final Translations translations = Translations.defaultProvider(List.of("en", "es", "de"))
     .addFallbackTranslationProvider(wikidataTranslations);
 
+  static final List<String> EXTRA_LAYERS =
+    List.of("railway", "blood_bank", "roundabout", "named", "traffic_control");
+
   final PlanetilerConfig params = PlanetilerConfig.defaults();
-  final OpenMapTilesProfile profile = new OpenMapTilesProfile(translations, PlanetilerConfig.defaults(),
-    Stats.inMemory());
+  final OpenMapTilesProfile profile = createProfile();
   final Stats stats = Stats.inMemory();
   final FeatureCollector.Factory featureCollectorFactory = new FeatureCollector.Factory(params, stats);
 
@@ -82,6 +85,20 @@ public abstract class AbstractLayerTest {
       new HashMap<>(map),
       group
     );
+  }
+
+  /**
+   * The built-in layer tests check the complete output of a tile, so they run without the layers from
+   * {@code ExtraLayers} (those are tested in {@code ExtraLayersTest}, which overrides this to include them).
+   */
+  OpenMapTilesProfile createProfile() {
+    var config = PlanetilerConfig.from(Arguments.of("exclude_layers", String.join(",", EXTRA_LAYERS)));
+    return new OpenMapTilesProfile(translations, config, Stats.inMemory());
+  }
+
+  /** Keeps only the features of one layer, so layers added by {@code ExtraLayers} do not get in the way. */
+  static List<FeatureCollector.Feature> only(String layer, FeatureCollector collector) {
+    return StreamSupport.stream(collector.spliterator(), false).filter(f -> layer.equals(f.getLayer())).toList();
   }
 
   FeatureCollector process(SourceFeature feature) {
