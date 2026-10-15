@@ -14,6 +14,11 @@ public class ExtraLayers {
   public static List<Layer> create(Translations translations, PlanetilerConfig config, Stats stats) {
     return List.of(
       // Create classes that extend Layer interface in the addons package, then instantiate them here
+      new Railway(translations, config, stats),
+      new BloodBank(translations, config, stats),
+      new Roundabout(translations, config, stats),
+      new NamedFeature(translations, config, stats),
+      new TrafficControl(translations, config, stats)
     );
   }
 }
